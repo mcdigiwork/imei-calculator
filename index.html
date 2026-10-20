@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IMEI Calculator — Clean & Ad-Free</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d27;
+    --border: #2a2e3a;
+    --text: #e8eaed;
+    --muted: #8b90a0;
+    --accent: #5b8def;
+    --accent-hover: #7aa3f5;
+    --success: #3dd68c;
+    --error: #f07178;
+    --input-bg: #12141c;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f5f6f8;
+      --card: #ffffff;
+      --border: #e1e4ea;
+      --text: #1a1d27;
+      --muted: #6b7080;
+      --accent: #3b6fd8;
+      --accent-hover: #2a5bc4;
+      --input-bg: #f9fafb;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+  .container {
+    width: 100%;
+    max-width: 480px;
+  }
+  h1 {
+    font-size: 1.6rem;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.25rem;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-bottom: 1.75rem;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+  }
+  label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+  input {
+    width: 100%;
+    font-size: 1.35rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    letter-spacing: 0.04em;
+    padding: 0.85rem 1rem;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--input-bg);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--muted); opacity: 0.6; }
+  .actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+  button {
+    flex: 1;
+    padding: 0.8rem 1rem;
+    border-radius: 10px;
+    border: none;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.05s;
+  }
+  button:active { transform: scale(0.98); }
+  .primary {
+    background: var(--accent);
+    color: white;
+  }
+  .primary:hover { background: var(--accent-hover); }
+  .secondary {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .secondary:hover { background: var(--border); }
+  .result {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    display: none;
+  }
+  .result.visible { display: block; }
+  .status {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .status.valid { color: var(--success); }
+  .status.invalid { color: var(--error); }
+  .imei-display {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 1.5rem;
+    font-weight: 650;
+    letter-spacing: 0.06em;
+    margin-bottom: 1rem;
+    word-break: break-all;
+  }
+  .breakdown {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.75rem;
+  }
+  .part {
+    background: var(--input-bg);
+    border-radius: 8px;
+    padding: 0.75rem;
+    text-align: center;
+  }
+  .part .label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    margin-bottom: 0.25rem;
+  }
+  .part .value {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  .lookup {
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
+  }
+  .lookup h3 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+  }
+  .lookup-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .lookup-buttons button, .lookup-buttons a {
+    display: block;
+    text-align: center;
+    text-decoration: none;
+    padding: 0.7rem 1rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .lookup-buttons button:hover, .lookup-buttons a:hover {
+    background: var(--border);
+  }
+  .lookup-buttons .primary-link {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+  .lookup-buttons .primary-link:hover {
+    background: var(--accent-hover);
+  }
+  .note {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 0.75rem;
+    line-height: 1.4;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>IMEI Calculator</h1>
+  <p class="subtitle">Calculate the check digit or validate an IMEI. Pure client-side, no ads.</p>
+
+  <div class="card">
+    <label for="imei">IMEI (14 or 15 digits)</label>
+    <input id="imei" type="text" inputmode="numeric" autocomplete="off" placeholder="e.g. 35316105214284" maxlength="20">
+
+    <div class="actions">
+      <button class="primary" id="calc">Calculate / Validate</button>
+      <button class="secondary" id="clear">Clear</button>
+    </div>
+
+    <div class="result" id="result">
+      <div class="status" id="status"></div>
+      <div class="imei-display" id="full"></div>
+      <div class="breakdown">
+        <div class="part">
+          <div class="label">TAC</div>
+          <div class="value" id="tac">—</div>
+        </div>
+        <div class="part">
+          <div class="label">Serial</div>
+          <div class="value" id="snr">—</div>
+        </div>
+        <div class="part">
+          <div class="label">Check</div>
+          <div class="value" id="cd">—</div>
+        </div>
+      </div>
+      <div class="lookup" id="lookup" style="display:none">
+        <h3>Model lookup (free sources first)</h3>
+        <div class="lookup-buttons" id="lookup-buttons"></div>
+        <p class="note">Free sources are checked via direct links (no API key needed). If none of them identify the device, use the fallback options below.</p>
+      </div>
+    </div>
+  </div>
+
+  <p class="footer">
+    Check digit is calculated locally. Model lookups open external free databases.<br>
+    Full commercial databases (like imei.info’s) require paid access.
+  </p>
+</div>
+
+<script>
+function digitsOnly(s) {
+  return (s || '').replace(/\D/g, '');
+}
+
+function luhnChecksum(digits) {
+  // Process from the right. For generation we pass the 14 digits + a placeholder 0.
+  let sum = 0;
+  const len = digits.length;
+  for (let i = 0; i < len; i++) {
+    let d = parseInt(digits[len - 1 - i], 10);
+    if (i % 2 === 1) {
+      d *= 2;
+      if (d > 9) d -= 9;
+    }
+    sum += d;
+  }
+  return sum % 10;
+}
+
+function calculateCheckDigit(body14) {
+  // Append 0 and see what residue we get, then compute required check digit
+  const residue = luhnChecksum(body14 + '0');
+  return (10 - residue) % 10;
+}
+
+function validateIMEI(imei15) {
+  return luhnChecksum(imei15) === 0;
+}
+
+function showResult(full, isValid, message) {
+  const result = document.getElementById('result');
+  const status = document.getElementById('status');
+  const fullEl = document.getElementById('full');
+  const tacEl = document.getElementById('tac');
+  const snr = document.getElementById('snr');
+  const cd = document.getElementById('cd');
+  const lookup = document.getElementById('lookup');
+  const buttons = document.getElementById('lookup-buttons');
+
+  result.classList.add('visible');
+  status.textContent = message;
+  status.className = 'status ' + (isValid ? 'valid' : 'invalid');
+  fullEl.textContent = full;
+
+  if (full && full.length === 15) {
+    const tac = full.slice(0, 8);
+    tacEl.textContent = tac;
+    snr.textContent = full.slice(8, 14);
+    cd.textContent = full.slice(14);
+
+    // Only show lookup options for valid or calculated IMEIs
+    if (isValid) {
+      lookup.style.display = 'block';
+      buttons.innerHTML = '';
+
+      // Free sources (direct links)
+      const freeLinks = [
+        { label: 'fccid.io (open TAC sources)', url: `https://fccid.io/TAC/${tac}` },
+        { label: 'Osmocom TAC Database', url: 'https://tacdb.osmocom.org/' },
+        { label: 'HiCellTek free web lookup', url: 'https://hicelltek.com/en/tac-lookup/' }
+      ];
+
+      freeLinks.forEach(link => {
+        const a = document.createElement('a');
+        a.href = link.url;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        a.textContent = link.label;
+        a.className = 'primary-link';
+        buttons.appendChild(a);
+      });
+
+      // Fallbacks
+      const copyBtn = document.createElement('button');
+      copyBtn.textContent = 'Copy IMEI + open imei.info';
+      copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(full).then(() => {
+          window.open('https://imei.info/', '_blank');
+        }).catch(() => {
+          window.open('https://imei.info/', '_blank');
+        });
+      });
+      buttons.appendChild(copyBtn);
+
+      const note = document.createElement('p');
+      note.className = 'note';
+      note.textContent = 'HiCellTek free web tool needs no key. Their API free tier (100/mo) requires a free signup. imei.info is the commercial fallback.';
+      buttons.appendChild(note);
+    } else {
+      lookup.style.display = 'none';
+    }
+  } else {
+    tacEl.textContent = snr.textContent = cd.textContent = '—';
+    lookup.style.display = 'none';
+  }
+}
+
+function process() {
+  const raw = document.getElementById('imei').value;
+  const digits = digitsOnly(raw);
+
+  if (digits.length === 0) {
+    showResult('', false, 'Enter 14 or 15 digits.');
+    return;
+  }
+  if (digits.length < 14) {
+    showResult('', false, `Need at least 14 digits (got ${digits.length}).`);
+    return;
+  }
+  if (digits.length > 15) {
+    showResult('', false, `Too many digits (${digits.length}). Use 14 or 15.`);
+    return;
+  }
+
+  if (digits.length === 14) {
+    const check = calculateCheckDigit(digits);
+    const full = digits + check;
+    showResult(full, true, `Check digit: ${check}`);
+  } else {
+    // 15 digits
+    const valid = validateIMEI(digits);
+    const expected = calculateCheckDigit(digits.slice(0, 14));
+    const actual = digits[14];
+    if (valid) {
+      showResult(digits, true, 'Valid IMEI — checksum matches.');
+    } else {
+      showResult(digits, false, `Invalid checksum. Expected check digit: ${expected} (got ${actual}).`);
+    }
+  }
+}
+
+document.getElementById('calc').addEventListener('click', process);
+document.getElementById('imei').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') process();
+});
+document.getElementById('clear').addEventListener('click', () => {
+  document.getElementById('imei').value = '';
+  document.getElementById('result').classList.remove('visible');
+  document.getElementById('imei').focus();
+});
+
+// Live feedback as user types (optional, lightweight)
+document.getElementById('imei').addEventListener('input', () => {
+  const digits = digitsOnly(document.getElementById('imei').value);
+  if (digits.length === 14 || digits.length === 15) {
+    process();
+  }
+});
+</script>
+</body>
+</html>
