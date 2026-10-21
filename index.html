@@ -42,7 +42,7 @@
   }
   .container {
     width: 100%;
-    max-width: 480px;
+    max-width: 500px;
   }
   h1 {
     font-size: 1.6rem;
@@ -139,7 +139,7 @@
   }
   .breakdown {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
     gap: 0.75rem;
   }
   .part {
@@ -217,7 +217,7 @@
   <p class="subtitle">Calculate the check digit or validate an IMEI. Pure client-side, no ads.</p>
 
   <div class="card">
-    <label for="imei">IMEI (14 or 15 digits)</label>
+    <label for="imei">IMEI (14, 15 or 16 digits)</label>
     <input id="imei" type="text" inputmode="numeric" autocomplete="off" placeholder="e.g. 35316105214284" maxlength="20">
 
     <div class="actions">
@@ -240,6 +240,10 @@
         <div class="part">
           <div class="label">Check</div>
           <div class="value" id="cd">—</div>
+        </div>
+        <div class="part" id="sv-wrap" style="display:none">
+          <div class="label">SV</div>
+          <div class="value" id="sv">—</div>
         </div>
       </div>
       <div class="lookup" id="lookup" style="display:none">
@@ -293,6 +297,8 @@ function showResult(full, isValid, message) {
   const tacEl = document.getElementById('tac');
   const snr = document.getElementById('snr');
   const cd = document.getElementById('cd');
+  const svWrap = document.getElementById('sv-wrap');
+  const svEl = document.getElementById('sv');
   const lookup = document.getElementById('lookup');
   const buttons = document.getElementById('lookup-buttons');
 
@@ -301,13 +307,20 @@ function showResult(full, isValid, message) {
   status.className = 'status ' + (isValid ? 'valid' : 'invalid');
   fullEl.textContent = full;
 
-  if (full && full.length === 15) {
+  if (full && full.length >= 15) {
     const tac = full.slice(0, 8);
     tacEl.textContent = tac;
     snr.textContent = full.slice(8, 14);
-    cd.textContent = full.slice(14);
+    cd.textContent = full.slice(14, 15);
 
-    // Only show lookup options for valid or calculated IMEIs
+    if (full.length === 16) {
+      svWrap.style.display = 'block';
+      svEl.textContent = full.slice(15);
+    } else {
+      svWrap.style.display = 'none';
+      svEl.textContent = '—';
+    }
+
     if (isValid) {
       lookup.style.display = 'block';
       buttons.innerHTML = '';
@@ -350,6 +363,8 @@ function showResult(full, isValid, message) {
     }
   } else {
     tacEl.textContent = snr.textContent = cd.textContent = '—';
+    svWrap.style.display = 'none';
+    svEl.textContent = '—';
     lookup.style.display = 'none';
   }
 }
@@ -359,15 +374,15 @@ function process() {
   const digits = digitsOnly(raw);
 
   if (digits.length === 0) {
-    showResult('', false, 'Enter 14 or 15 digits.');
+    showResult('', false, 'Enter 14, 15 or 16 digits.');
     return;
   }
   if (digits.length < 14) {
     showResult('', false, `Need at least 14 digits (got ${digits.length}).`);
     return;
   }
-  if (digits.length > 15) {
-    showResult('', false, `Too many digits (${digits.length}). Use 14 or 15.`);
+  if (digits.length > 16) {
+    showResult('', false, `Too many digits (${digits.length}). Use 14, 15 or 16.`);
     return;
   }
 
@@ -375,16 +390,30 @@ function process() {
     const check = calculateCheckDigit(digits);
     const full = digits + check;
     showResult(full, true, `Check digit: ${check}`);
-  } else {
-    // 15 digits
-    const valid = validateIMEI(digits);
-    const expected = calculateCheckDigit(digits.slice(0, 14));
-    const actual = digits[14];
+    return;
+  }
+
+  if (digits.length === 16) {
+    const imeiBase = digits.slice(0, 15);
+    const valid = validateIMEI(imeiBase);
+    const expected = calculateCheckDigit(imeiBase.slice(0, 14));
+    const actual = imeiBase[14];
     if (valid) {
-      showResult(digits, true, 'Valid IMEI — checksum matches.');
+      showResult(digits, true, 'Valid IMEI / IMEISV — checksum matches.');
     } else {
       showResult(digits, false, `Invalid checksum. Expected check digit: ${expected} (got ${actual}).`);
     }
+    return;
+  }
+
+  // 15 digits
+  const valid = validateIMEI(digits);
+  const expected = calculateCheckDigit(digits.slice(0, 14));
+  const actual = digits[14];
+  if (valid) {
+    showResult(digits, true, 'Valid IMEI — checksum matches.');
+  } else {
+    showResult(digits, false, `Invalid checksum. Expected check digit: ${expected} (got ${actual}).`);
   }
 }
 
@@ -401,7 +430,7 @@ document.getElementById('clear').addEventListener('click', () => {
 // Live feedback as user types (optional, lightweight)
 document.getElementById('imei').addEventListener('input', () => {
   const digits = digitsOnly(document.getElementById('imei').value);
-  if (digits.length === 14 || digits.length === 15) {
+  if (digits.length === 14 || digits.length === 15 || digits.length === 16) {
     process();
   }
 });
