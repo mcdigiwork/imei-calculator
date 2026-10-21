@@ -42,7 +42,7 @@
   }
   .container {
     width: 100%;
-    max-width: 500px;
+    max-width: 480px;
   }
   h1 {
     font-size: 1.6rem;
@@ -139,7 +139,7 @@
   }
   .breakdown {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 0.75rem;
   }
   .part {
@@ -214,14 +214,14 @@
 <body>
 <div class="container">
   <h1>IMEI Calculator</h1>
-  <p class="subtitle">Calculate the check digit or validate an IMEI. Pure client-side, no ads.</p>
+  <p class="subtitle">Calculate the check digit for a 14-digit IMEI body. Pure client-side, no ads.</p>
 
   <div class="card">
-    <label for="imei">IMEI / IMEISV (14, 15 or 16 digits)</label>
-    <input id="imei" type="text" inputmode="numeric" autocomplete="off" placeholder="e.g. 35316105214284" maxlength="20">
+    <label for="imei">IMEI body (14 digits)</label>
+    <input id="imei" type="text" inputmode="numeric" autocomplete="off" placeholder="e.g. 35729709076831" maxlength="14">
 
     <div class="actions">
-      <button class="primary" id="calc">Calculate / Validate</button>
+      <button class="primary" id="calc">Calculate</button>
       <button class="secondary" id="clear">Clear</button>
     </div>
 
@@ -241,28 +241,23 @@
           <div class="label">Check</div>
           <div class="value" id="cd">—</div>
         </div>
-        <div class="part" id="sv-wrap" style="display:none">
-          <div class="label">SV</div>
-          <div class="value" id="sv">—</div>
-        </div>
-      </div>
-      <div class="lookup" id="lookup" style="display:none">
-        <h3>Model lookup (free sources first)</h3>
-        <div class="lookup-buttons" id="lookup-buttons"></div>
-        <p class="note">Free sources are checked via direct links (no API key needed). If none of them identify the device, use the fallback options below.</p>
       </div>
     </div>
   </div>
 
   <p class="footer">
-    Check digit is calculated locally. Model lookups open external free databases.<br>
-    Full commercial databases (like imei.info’s) require paid access.
+    The app uses the first 14 digits only and calculates the final IMEI check digit locally.
   </p>
 </div>
 
 <script>
 function digitsOnly(s) {
   return (s || '').replace(/\D/g, '');
+}
+
+function clampTo14(value) {
+  const digits = digitsOnly(value).slice(0, 14);
+  return digits;
 }
 
 function luhnChecksum(digits) {
@@ -284,134 +279,47 @@ function calculateCheckDigit(body14) {
   return (10 - residue) % 10;
 }
 
-function validateIMEI(imei15) {
-  return luhnChecksum(imei15) === 0;
-}
-
-function showResult(full, isValid, message) {
+function showResult(full, message) {
   const result = document.getElementById('result');
   const status = document.getElementById('status');
   const fullEl = document.getElementById('full');
   const tacEl = document.getElementById('tac');
   const snr = document.getElementById('snr');
   const cd = document.getElementById('cd');
-  const svWrap = document.getElementById('sv-wrap');
-  const svEl = document.getElementById('sv');
-  const lookup = document.getElementById('lookup');
-  const buttons = document.getElementById('lookup-buttons');
 
   result.classList.add('visible');
   status.textContent = message;
-  status.className = 'status ' + (isValid ? 'valid' : 'invalid');
+  status.className = 'status valid';
   fullEl.textContent = full;
 
-  if (full && full.length >= 15) {
+  if (full && full.length === 15) {
     const tac = full.slice(0, 8);
     tacEl.textContent = tac;
     snr.textContent = full.slice(8, 14);
-    cd.textContent = full.slice(14, 15);
-
-    if (full.length === 16) {
-      svWrap.style.display = 'block';
-      svEl.textContent = full.slice(15);
-    } else {
-      svWrap.style.display = 'none';
-      svEl.textContent = '—';
-    }
-
-    if (isValid) {
-      lookup.style.display = 'block';
-      buttons.innerHTML = '';
-
-      const freeLinks = [
-        { label: 'fccid.io (open TAC sources)', url: `https://fccid.io/TAC/${tac}` },
-        { label: 'Osmocom TAC Database', url: 'https://tacdb.osmocom.org/' },
-        { label: 'HiCellTek free web lookup', url: 'https://hicelltek.com/en/tac-lookup/' }
-      ];
-
-      freeLinks.forEach(link => {
-        const a = document.createElement('a');
-        a.href = link.url;
-        a.target = '_blank';
-        a.rel = 'noopener';
-        a.textContent = link.label;
-        a.className = 'primary-link';
-        buttons.appendChild(a);
-      });
-
-      const copyBtn = document.createElement('button');
-      copyBtn.textContent = 'Copy IMEI + open imei.info';
-      copyBtn.addEventListener('click', () => {
-        navigator.clipboard.writeText(full).then(() => {
-          window.open('https://imei.info/', '_blank');
-        }).catch(() => {
-          window.open('https://imei.info/', '_blank');
-        });
-      });
-      buttons.appendChild(copyBtn);
-
-      const note = document.createElement('p');
-      note.className = 'note';
-      note.textContent = 'HiCellTek free web tool needs no key. Their API free tier (100/mo) requires a free signup. imei.info is the commercial fallback.';
-      buttons.appendChild(note);
-    } else {
-      lookup.style.display = 'none';
-    }
+    cd.textContent = full.slice(14);
   } else {
     tacEl.textContent = snr.textContent = cd.textContent = '—';
-    svWrap.style.display = 'none';
-    svEl.textContent = '—';
-    lookup.style.display = 'none';
   }
 }
 
 function process() {
-  const raw = document.getElementById('imei').value;
-  const digits = digitsOnly(raw);
+  const input = document.getElementById('imei');
+  const digits = clampTo14(input.value);
+  input.value = digits;
 
   if (digits.length === 0) {
-    showResult('', false, 'Enter 14, 15 or 16 digits.');
+    showResult('', 'Enter 14 digits.');
     return;
   }
+
   if (digits.length < 14) {
-    showResult('', false, `Need at least 14 digits (got ${digits.length}).`);
-    return;
-  }
-  if (digits.length > 16) {
-    showResult('', false, `Too many digits (${digits.length}). Use 14, 15 or 16.`);
+    showResult('', `Need 14 digits (got ${digits.length}).`);
     return;
   }
 
-  if (digits.length === 14) {
-    const check = calculateCheckDigit(digits);
-    const full = digits + check;
-    showResult(full, true, `Check digit: ${check}`);
-    return;
-  }
-
-  if (digits.length === 16) {
-    const imeiCore = digits.slice(0, 15);
-    const svDigit = digits[15];
-    const valid = validateIMEI(imeiCore);
-
-    if (valid) {
-      showResult(digits, true, `Valid IMEI / IMEISV — checksum matches on the 15-digit IMEI core. Serial version: ${svDigit}`);
-    } else {
-      const expected = calculateCheckDigit(imeiCore.slice(0, 14));
-      const actual = imeiCore[14];
-      showResult(digits, false, `Invalid checksum. Expected check digit: ${expected} (got ${actual}).`);
-    }
-    return;
-  }
-
-  const valid = validateIMEI(digits);
-  const expected = calculateCheckDigit(digits.slice(0, 14));
-  const actual = digits[14];
-  if (valid) {
-    showResult(digits, true, 'Valid IMEI — checksum matches.');
-  } else {
-    showResult(digits, false, `Invalid checksum. Expected check digit: ${expected} (got ${actual}).`);
-  }
+  const check = calculateCheckDigit(digits);
+  const full = digits + check;
+  showResult(full, `Check digit: ${check}`);
 }
 
 document.getElementById('calc').addEventListener('click', process);
@@ -425,8 +333,9 @@ document.getElementById('clear').addEventListener('click', () => {
 });
 
 document.getElementById('imei').addEventListener('input', () => {
-  const digits = digitsOnly(document.getElementById('imei').value);
-  if (digits.length === 14 || digits.length === 15 || digits.length === 16) {
+  const digits = clampTo14(document.getElementById('imei').value);
+  document.getElementById('imei').value = digits;
+  if (digits.length === 14) {
     process();
   }
 });
