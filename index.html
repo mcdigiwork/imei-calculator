@@ -217,7 +217,7 @@
   <p class="subtitle">Calculate the check digit or validate an IMEI. Pure client-side, no ads.</p>
 
   <div class="card">
-    <label for="imei">IMEI (14, 15 or 16 digits)</label>
+    <label for="imei">IMEI / IMEISV (14, 15 or 16 digits)</label>
     <input id="imei" type="text" inputmode="numeric" autocomplete="off" placeholder="e.g. 35316105214284" maxlength="20">
 
     <div class="actions">
@@ -266,7 +266,6 @@ function digitsOnly(s) {
 }
 
 function luhnChecksum(digits) {
-  // Process from the right. For generation we pass the 14 digits + a placeholder 0.
   let sum = 0;
   const len = digits.length;
   for (let i = 0; i < len; i++) {
@@ -281,7 +280,6 @@ function luhnChecksum(digits) {
 }
 
 function calculateCheckDigit(body14) {
-  // Append 0 and see what residue we get, then compute required check digit
   const residue = luhnChecksum(body14 + '0');
   return (10 - residue) % 10;
 }
@@ -325,7 +323,6 @@ function showResult(full, isValid, message) {
       lookup.style.display = 'block';
       buttons.innerHTML = '';
 
-      // Free sources (direct links)
       const freeLinks = [
         { label: 'fccid.io (open TAC sources)', url: `https://fccid.io/TAC/${tac}` },
         { label: 'Osmocom TAC Database', url: 'https://tacdb.osmocom.org/' },
@@ -342,7 +339,6 @@ function showResult(full, isValid, message) {
         buttons.appendChild(a);
       });
 
-      // Fallbacks
       const copyBtn = document.createElement('button');
       copyBtn.textContent = 'Copy IMEI + open imei.info';
       copyBtn.addEventListener('click', () => {
@@ -394,19 +390,20 @@ function process() {
   }
 
   if (digits.length === 16) {
-    const imeiBase = digits.slice(0, 15);
-    const valid = validateIMEI(imeiBase);
-    const expected = calculateCheckDigit(imeiBase.slice(0, 14));
-    const actual = imeiBase[14];
+    const imeiCore = digits.slice(0, 15);
+    const svDigit = digits[15];
+    const valid = validateIMEI(imeiCore);
+
     if (valid) {
-      showResult(digits, true, 'Valid IMEI / IMEISV — checksum matches.');
+      showResult(digits, true, `Valid IMEI / IMEISV — checksum matches on the 15-digit IMEI core. Serial version: ${svDigit}`);
     } else {
+      const expected = calculateCheckDigit(imeiCore.slice(0, 14));
+      const actual = imeiCore[14];
       showResult(digits, false, `Invalid checksum. Expected check digit: ${expected} (got ${actual}).`);
     }
     return;
   }
 
-  // 15 digits
   const valid = validateIMEI(digits);
   const expected = calculateCheckDigit(digits.slice(0, 14));
   const actual = digits[14];
@@ -427,7 +424,6 @@ document.getElementById('clear').addEventListener('click', () => {
   document.getElementById('imei').focus();
 });
 
-// Live feedback as user types (optional, lightweight)
 document.getElementById('imei').addEventListener('input', () => {
   const digits = digitsOnly(document.getElementById('imei').value);
   if (digits.length === 14 || digits.length === 15 || digits.length === 16) {
