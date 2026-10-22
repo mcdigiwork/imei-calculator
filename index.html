@@ -242,6 +242,12 @@
           <div class="value" id="cd">—</div>
         </div>
       </div>
+
+      <div class="lookup" id="lookup">
+        <h3>Model lookup</h3>
+        <div class="lookup-buttons" id="lookup-buttons"></div>
+        <p class="note">Free sources are checked via direct links (no API key needed).</p>
+      </div>
     </div>
   </div>
 
@@ -256,8 +262,7 @@ function digitsOnly(s) {
 }
 
 function clampTo14(value) {
-  const digits = digitsOnly(value).slice(0, 14);
-  return digits;
+  return digitsOnly(value).slice(0, 14);
 }
 
 function luhnChecksum(digits) {
@@ -279,6 +284,39 @@ function calculateCheckDigit(body14) {
   return (10 - residue) % 10;
 }
 
+function buildLookupButtons(full) {
+  const tac = full.slice(0, 8);
+  const buttons = document.getElementById('lookup-buttons');
+  buttons.innerHTML = '';
+
+  const freeLinks = [
+    { label: 'fccid.io (open TAC sources)', url: `https://fccid.io/TAC/${tac}` },
+    { label: 'Osmocom TAC Database', url: 'https://tacdb.osmocom.org/' },
+    { label: 'HiCellTek free web lookup', url: 'https://hicelltek.com/en/tac-lookup/' }
+  ];
+
+  freeLinks.forEach(link => {
+    const a = document.createElement('a');
+    a.href = link.url;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.textContent = link.label;
+    a.className = 'primary-link';
+    buttons.appendChild(a);
+  });
+
+  const copyBtn = document.createElement('button');
+  copyBtn.textContent = 'Copy IMEI + open imei.info';
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(full).then(() => {
+      window.open('https://imei.info/', '_blank');
+    }).catch(() => {
+      window.open('https://imei.info/', '_blank');
+    });
+  });
+  buttons.appendChild(copyBtn);
+}
+
 function showResult(full, message) {
   const result = document.getElementById('result');
   const status = document.getElementById('status');
@@ -286,6 +324,7 @@ function showResult(full, message) {
   const tacEl = document.getElementById('tac');
   const snr = document.getElementById('snr');
   const cd = document.getElementById('cd');
+  const lookup = document.getElementById('lookup');
 
   result.classList.add('visible');
   status.textContent = message;
@@ -297,8 +336,11 @@ function showResult(full, message) {
     tacEl.textContent = tac;
     snr.textContent = full.slice(8, 14);
     cd.textContent = full.slice(14);
+    lookup.style.display = 'block';
+    buildLookupButtons(full);
   } else {
     tacEl.textContent = snr.textContent = cd.textContent = '—';
+    lookup.style.display = 'none';
   }
 }
 
