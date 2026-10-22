@@ -214,7 +214,7 @@
 <body>
 <div class="container">
   <h1>IMEI Calculator</h1>
-  <p class="subtitle">Calculate the check digit for a 14-digit IMEI body. Pure client-side, no ads.</p>
+  <p class="subtitle"></p>
 
   <div class="card">
     <label for="imei">IMEI body (14 digits)</label>
@@ -246,14 +246,11 @@
       <div class="lookup" id="lookup">
         <h3>Model lookup</h3>
         <div class="lookup-buttons" id="lookup-buttons"></div>
-        <p class="note">Free sources are checked via direct links (no API key needed).</p>
       </div>
     </div>
   </div>
 
-  <p class="footer">
-    The app uses the first 14 digits only and calculates the final IMEI check digit locally.
-  </p>
+  <p class="footer"></p>
 </div>
 
 <script>
@@ -290,9 +287,7 @@ function buildLookupButtons(full) {
   buttons.innerHTML = '';
 
   const freeLinks = [
-    { label: 'fccid.io (open TAC sources)', url: `https://fccid.io/TAC/${tac}` },
-    { label: 'Osmocom TAC Database', url: 'https://tacdb.osmocom.org/' },
-    { label: 'HiCellTek free web lookup', url: 'https://hicelltek.com/en/tac-lookup/' }
+    { label: 'fccid.io (open TAC sources)', url: `https://fccid.io/TAC/${tac}` }
   ];
 
   freeLinks.forEach(link => {
