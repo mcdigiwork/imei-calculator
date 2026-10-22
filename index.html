@@ -305,16 +305,13 @@ function buildLookupButtons(full) {
     buttons.appendChild(a);
   });
 
-  const copyBtn = document.createElement('button');
-  copyBtn.textContent = 'Copy IMEI + open imei.info';
-  copyBtn.addEventListener('click', () => {
-    navigator.clipboard.writeText(full).then(() => {
-      window.open('https://imei.info/', '_blank');
-    }).catch(() => {
-      window.open('https://imei.info/', '_blank');
-    });
+  const imeiInfoBtn = document.createElement('button');
+  imeiInfoBtn.textContent = 'imei.info';
+  imeiInfoBtn.addEventListener('click', () => {
+    const url = `https://www.imei.info/?imei=${full}`;
+    window.open(url, '_blank', 'noopener');
   });
-  buttons.appendChild(copyBtn);
+  buttons.appendChild(imeiInfoBtn);
 }
 
 function showResult(full, message) {
